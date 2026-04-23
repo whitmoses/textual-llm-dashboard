@@ -43,7 +43,6 @@
   .color-chatgpt { color: #10a37f; } .dot-chatgpt { background: #10a37f; } .bar-chatgpt { background: #10a37f; }
   .color-claude   { color: #d97706; } .dot-claude   { background: #d97706; } .bar-claude   { background: #d97706; }
   .color-gemini   { color: #4285f4; } .dot-gemini   { background: #4285f4; } .bar-gemini   { background: #4285f4; }
-  .color-perplexity { color: #9b59b6; } .dot-perplexity { background: #9b59b6; } .bar-perplexity { background: #9b59b6; }
 
   .table-wrap { background: #1a1f2e; border: 1px solid #2d3748; border-radius: 12px; overflow: hidden; }
   .table-header-row { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #2d3748; flex-wrap: wrap; gap: 10px; }
@@ -53,8 +52,8 @@
   table { width: 100%; border-collapse: collapse; }
   thead tr { background: #141820; }
   th { padding: 12px 16px; text-align: left; font-size: 11px; font-weight: 600; color: #718096; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #2d3748; white-space: nowrap; }
-  th.query-col { width: 38%; }
-  th.llm-col { width: 15.5%; text-align: center; }
+  th.query-col { width: 45%; }
+  th.llm-col { width: 18.3%; text-align: center; }
   td { padding: 14px 16px; border-bottom: 1px solid #1e2530; vertical-align: middle; }
   tr:last-child td { border-bottom: none; }
   tr:hover td { background: rgba(255,255,255,0.02); }
@@ -147,6 +146,27 @@
     .main { padding: 16px; }
     .header { padding: 14px 16px; }
   }
+
+  /* ── Response Log ── */
+  .log-wrap { background: #1a1f2e; border: 1px solid #2d3748; border-radius: 12px; overflow: hidden; margin-top: 24px; }
+  .log-header-row { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #2d3748; }
+  .log-title { font-size: 14px; font-weight: 600; color: #e2e8f0; }
+  .log-controls { display: flex; gap: 8px; align-items: center; }
+  .log-count { font-size: 11px; color: #718096; background: #2d3748; padding: 2px 8px; border-radius: 10px; }
+  .log-empty { padding: 40px 20px; text-align: center; font-size: 13px; color: #4a5568; }
+  .log-entries { max-height: 520px; overflow-y: auto; }
+  .log-entry { border-bottom: 1px solid #1e2530; padding: 14px 20px; }
+  .log-entry:last-child { border-bottom: none; }
+  .log-entry-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+  .log-llm-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 5px; }
+  .log-llm-chatgpt  { background: rgba(16,163,127,0.15); color: #10a37f; }
+  .log-llm-claude   { background: rgba(217,119,6,0.15);  color: #d97706; }
+  .log-llm-gemini   { background: rgba(66,133,244,0.15); color: #4285f4; }
+  .log-query-text { font-size: 12px; color: #a0aec0; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .log-score-pill { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+  .log-time { font-size: 10px; color: #4a5568; margin-left: auto; flex-shrink: 0; }
+  .log-response-text { font-size: 12px; color: #718096; line-height: 1.6; white-space: pre-wrap; word-break: break-word; font-family: 'SF Mono', 'Consolas', monospace; background: #141820; border-radius: 6px; padding: 10px 12px; max-height: 160px; overflow-y: auto; }
+  .log-response-text .tonic-highlight { background: rgba(0,194,168,0.2); color: #00c2a8; border-radius: 3px; padding: 0 2px; }
 </style>
 </head>
 <body>
@@ -156,7 +176,7 @@
     <div class="logo">T</div>
     <div>
       <div class="header-title">Tonic Textual — LLM Visibility</div>
-      <div class="header-subtitle">Real-time scoring across ChatGPT · Claude · Gemini · Perplexity</div>
+      <div class="header-subtitle">Real-time scoring across ChatGPT · Claude · Gemini</div>
     </div>
   </div>
   <div class="header-actions">
@@ -194,7 +214,6 @@
           <th class="llm-col">ChatGPT</th>
           <th class="llm-col">Claude</th>
           <th class="llm-col">Gemini</th>
-          <th class="llm-col">Perplexity</th>
         </tr>
       </thead>
       <tbody id="tableBody"></tbody>
@@ -202,6 +221,20 @@
     <div class="meta-row">
       <div class="meta-text">Click any cell to view details or override a score manually.</div>
       <div class="meta-text" id="lastUpdated"></div>
+    </div>
+  </div>
+
+  <!-- Response Log -->
+  <div class="log-wrap">
+    <div class="log-header-row">
+      <div class="log-title">📋 Response Log</div>
+      <div class="log-controls">
+        <span class="log-count" id="logCount">0 entries</span>
+        <button class="btn btn-secondary" style="font-size:12px;padding:6px 12px" onclick="clearLog()">Clear</button>
+      </div>
+    </div>
+    <div id="logEntries">
+      <div class="log-empty" id="logEmpty">No responses logged yet. Run a query to see results here.</div>
     </div>
   </div>
 </div>
@@ -228,12 +261,6 @@
       <input class="api-key-input" id="key-gemini" type="password" placeholder="AIza..." autocomplete="off" oninput="updateBadge('gemini')">
       <div class="api-key-hint">Model: gemini-1.5-flash &nbsp;·&nbsp; <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#00c2a8">Get key →</a></div>
     </div>
-    <div class="api-key-group">
-      <div class="api-key-label"><span style="color:#9b59b6">●</span> Perplexity <span class="api-key-badge" id="badge-perplexity">not set</span></div>
-      <input class="api-key-input" id="key-perplexity" type="password" placeholder="pplx-..." autocomplete="off" oninput="updateBadge('perplexity')">
-      <div class="api-key-hint">Model: sonar &nbsp;·&nbsp; <a href="https://www.perplexity.ai/settings/api" target="_blank" style="color:#00c2a8">Get key →</a></div>
-    </div>
-
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeSettings()">Cancel</button>
       <button class="btn btn-primary" onclick="saveSettings()">Save Keys</button>
@@ -298,7 +325,6 @@ const LLMS = [
   { id: 'chatgpt',    apiId: 'openai',      label: 'ChatGPT',    cc: 'chatgpt'    },
   { id: 'claude',     apiId: 'anthropic',   label: 'Claude',     cc: 'claude'     },
   { id: 'gemini',     apiId: 'gemini',      label: 'Gemini',     cc: 'gemini'     },
-  { id: 'perplexity', apiId: 'perplexity',  label: 'Perplexity', cc: 'perplexity' },
 ];
 
 const QUERIES = [
@@ -315,16 +341,16 @@ const QUERIES = [
 ];
 
 const DEFAULT_DATA = [
-  { scores:[0,0,0,0], notes:["Adobe Acrobat, ilovepdf, smallpdf, Mac Preview listed. No Tonic.","Adobe Acrobat Pro, Preview, LibreOffice listed. No Tonic.","Adobe Acrobat Pro, Mac Preview, SmallPDF listed. No Tonic.","General PDF tools listed. No Tonic."] },
-  { scores:[0,0,0,1], notes:["Presidio, Gretel.ai, AWS Macie recommended. No Tonic.","Presidio, Gretel.ai, AWS Macie recommended. No Tonic.","General de-identification techniques. No Tonic.","Tonic.ai cited as a source reference."] },
-  { scores:[0,0,0,0], notes:["General best practices: k-anonymity, differential privacy. No Tonic.","General anonymization techniques. No specific tools.","General anonymization guidance. No specific tools.","Best practice framework. No specific tools."] },
-  { scores:[0,0,0,0], notes:["Data governance best practices, data minimization. No Tonic.","Compliance and governance guidance. No Tonic.","General AI data safety guidance. No Tonic.","AI data safety frameworks. No Tonic."] },
-  { scores:[0,0,0,0], notes:["NIST guidelines, differential privacy techniques. No Tonic.","Anonymization techniques for LLMs. No Tonic.","General anonymization methods for LLMs. No Tonic.","Anonymization methods — no specific tools."] },
-  { scores:[0,0,0,0], notes:["GDPR compliance guidance — CNIL, EDPB referenced. No Tonic.","GDPR legal basis, data minimization, DPIAs covered. No Tonic.","GDPR framework and obligations. No Tonic.","GDPR compliance overview. No Tonic."] },
-  { scores:[3,2,0,0], notes:["Tonic Textual listed FIRST as top enterprise recommendation — 'best for AI-ready de-identification workflows'.","Tonic.ai named as commercial option: 'Purpose-built for PII in unstructured text.' Listed alongside Nightfall, AWS Comprehend.","Microsoft Presidio, AWS Comprehend, spaCy, Azure Text Analytics listed. No Tonic.","Presidio, SpaCy, regex-based tools discussed. No Tonic."] },
-  { scores:[2,0,0,0], notes:["Tonic.ai listed first in 'Enterprise privacy / de-identification platforms' alongside BigID, Spirion, IBM InfoSphere.","Microsoft Presidio, scrubadub, Amazon Comprehend listed. No Tonic.","Microsoft Presidio, Google Cloud DLP, Amazon Comprehend listed. No Tonic.","Klippa, K2view and other tools listed. No Tonic."] },
-  { scores:[0,0,0,0], notes:["HIPAA Safe Harbor, PhysioNet, AWS HealthLake discussed. No Tonic.","HIPAA de-identification methods, NLP-based PHI redaction. No Tonic.","HIPAA PHI removal methods, clinical NLP discussed. No Tonic.","HIPAA de-identification standards discussed. No Tonic."] },
-  { scores:[0,0,0,0], notes:["Microsoft Presidio, Google Cloud DLP, AWS Macie recommended. No Tonic.","Microsoft Presidio, Google Cloud DLP, AWS Macie, regex pipelines covered. No Tonic.","Google Cloud DLP, Microsoft Purview, AWS Macie covered. No Tonic.","Enterprise document scrubbing approaches covered. No Tonic."] },
+  { scores:[0,0,0], notes:["Adobe Acrobat, ilovepdf, smallpdf, Mac Preview listed. No Tonic.","Adobe Acrobat Pro, Preview, LibreOffice listed. No Tonic.","Adobe Acrobat Pro, Mac Preview, SmallPDF listed. No Tonic."] },
+  { scores:[0,0,0], notes:["Presidio, Gretel.ai, AWS Macie recommended. No Tonic.","Presidio, Gretel.ai, AWS Macie recommended. No Tonic.","General de-identification techniques. No Tonic."] },
+  { scores:[0,0,0], notes:["General best practices: k-anonymity, differential privacy. No Tonic.","General anonymization techniques. No specific tools.","General anonymization guidance. No specific tools."] },
+  { scores:[0,0,0], notes:["Data governance best practices, data minimization. No Tonic.","Compliance and governance guidance. No Tonic.","General AI data safety guidance. No Tonic."] },
+  { scores:[0,0,0], notes:["NIST guidelines, differential privacy techniques. No Tonic.","Anonymization techniques for LLMs. No Tonic.","General anonymization methods for LLMs. No Tonic."] },
+  { scores:[0,0,0], notes:["GDPR compliance guidance — CNIL, EDPB referenced. No Tonic.","GDPR legal basis, data minimization, DPIAs covered. No Tonic.","GDPR framework and obligations. No Tonic."] },
+  { scores:[3,2,0], notes:["Tonic Textual listed FIRST as top enterprise recommendation — 'best for AI-ready de-identification workflows'.","Tonic.ai named as commercial option: 'Purpose-built for PII in unstructured text.' Listed alongside Nightfall, AWS Comprehend.","Microsoft Presidio, AWS Comprehend, spaCy, Azure Text Analytics listed. No Tonic."] },
+  { scores:[2,0,0], notes:["Tonic.ai listed first in 'Enterprise privacy / de-identification platforms' alongside BigID, Spirion, IBM InfoSphere.","Microsoft Presidio, scrubadub, Amazon Comprehend listed. No Tonic.","Microsoft Presidio, Google Cloud DLP, Amazon Comprehend listed. No Tonic."] },
+  { scores:[0,0,0], notes:["HIPAA Safe Harbor, PhysioNet, AWS HealthLake discussed. No Tonic.","HIPAA de-identification methods, NLP-based PHI redaction. No Tonic.","HIPAA PHI removal methods, clinical NLP discussed. No Tonic."] },
+  { scores:[0,0,0], notes:["Microsoft Presidio, Google Cloud DLP, AWS Macie recommended. No Tonic.","Microsoft Presidio, Google Cloud DLP, AWS Macie, regex pipelines covered. No Tonic.","Google Cloud DLP, Microsoft Purview, AWS Macie covered. No Tonic."] },
 ];
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -413,16 +439,7 @@ async function queryGemini(q, key) {
   return j.candidates[0].content.parts[0].text;
 }
 
-async function queryPerplexity(q, key) {
-  const r = await fetch('https://api.perplexity.ai/chat/completions', {
-    method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`},
-    body: JSON.stringify({ model:'sonar', messages:[{role:'system',content:SYSTEM_PROMPT},{role:'user',content:q}], max_tokens:900 })
-  });
-  if (!r.ok) throw new Error(`Perplexity ${r.status}: ${await r.text()}`);
-  return (await r.json()).choices[0].message.content;
-}
-
-const API_FNS = [queryOpenAI, queryAnthropic, queryGemini, queryPerplexity];
+const API_FNS = [queryOpenAI, queryAnthropic, queryGemini];
 
 // ── Run a single query ────────────────────────────────────────────────────────
 async function runQuery(qi, li) {
@@ -439,6 +456,7 @@ async function runQuery(qi, li) {
     saveState();
     renderCell(qi, li);
     renderSummary();
+    appendLog(qi, li, text, score);
   } catch(err) {
     console.error(`Q${qi+1} ${LLMS[li].label}:`, err);
     const td = document.getElementById(`cell-${qi}-${li}`);
@@ -501,6 +519,7 @@ async function refreshCell() {
     saveState();
     renderCell(qi, li);
     renderSummary();
+    appendLog(qi, li, text, score);
     // Refresh modal view
     document.getElementById('detailResponse').innerHTML = highlightTonic(escHtml(text));
     document.getElementById('responseSection').style.display = 'block';
@@ -642,7 +661,7 @@ function hideProgressStatus() {
 
 // ── Settings Modal ────────────────────────────────────────────────────────────
 function openSettings() {
-  ['openai','anthropic','gemini','perplexity'].forEach(id => {
+  ['openai','anthropic','gemini'].forEach(id => {
     const inp = document.getElementById(`key-${id}`);
     if (inp) inp.value = getKey(id);
     updateBadge(id);
@@ -651,7 +670,7 @@ function openSettings() {
 }
 function closeSettings() { document.getElementById('settingsOverlay').classList.remove('open'); }
 function saveSettings() {
-  ['openai','anthropic','gemini','perplexity'].forEach(id => {
+  ['openai','anthropic','gemini'].forEach(id => {
     setKey(id, (document.getElementById(`key-${id}`)?.value || '').trim());
     updateBadge(id);
   });
@@ -710,7 +729,50 @@ function setActiveScore(score) {
   }
 }
 
-// ── Toast ─────────────────────────────────────────────────────────────────────
+// ── Response Log ──────────────────────────────────────────────────────────────
+let logEntries = [];
+
+function appendLog(qi, li, text, score) {
+  const entry = { qi, li, text, score, time: new Date() };
+  logEntries.unshift(entry); // newest first
+  renderLog();
+}
+
+function clearLog() {
+  logEntries = [];
+  renderLog();
+}
+
+function renderLog() {
+  const container = document.getElementById('logEntries');
+  const countEl = document.getElementById('logCount');
+  const emptyEl = document.getElementById('logEmpty');
+  countEl.textContent = `${logEntries.length} entr${logEntries.length === 1 ? 'y' : 'ies'}`;
+
+  if (logEntries.length === 0) {
+    container.innerHTML = '<div class="log-empty" id="logEmpty">No responses logged yet. Run a query to see results here.</div>';
+    return;
+  }
+
+  container.innerHTML = logEntries.map(e => {
+    const llm = LLMS[e.li];
+    const q = QUERIES[e.qi];
+    const timeStr = e.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const scoreColors = ['score-0','score-1','score-2','score-3'];
+    return `
+      <div class="log-entry">
+        <div class="log-entry-header">
+          <span class="log-llm-badge log-llm-${llm.cc}">● ${llm.label}</span>
+          <span class="log-score-pill ${scoreColors[e.score]}">${e.score}</span>
+          <span class="log-query-text" title="${escHtml(q.text)}">Q${e.qi+1}: ${escHtml(q.text)}</span>
+          <span class="log-time">${timeStr}</span>
+        </div>
+        <div class="log-response-text">${highlightTonic(escHtml(e.text))}</div>
+      </div>`;
+  }).join('');
+}
+
+
 let toastTimer;
 function showToast(msg, type='success') {
   const toast = document.getElementById('toast');
