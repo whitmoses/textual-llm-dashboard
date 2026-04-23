@@ -730,44 +730,67 @@ function setActiveScore(score) {
 }
 
 // ── Response Log ──────────────────────────────────────────────────────────────
-let logEntries = [];
-
-function appendLog(qi, li, text, score) {
-  const entry = { qi, li, text, score, time: new Date() };
-  logEntries.unshift(entry); // newest first
-  renderLog();
+async function appendLog(qi, li, text, score) {
+  try {
+    await fetch('/api/log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query_index: qi,
+        query_text: QUERIES[qi].text,
+        llm: LLMS[li].label,
+        response: text,
+        score
+      })
+    });
+  } catch(err) {
+    console.error('Failed to save log entry:', err);
+  }
+  await loadLog();
 }
 
-function clearLog() {
-  logEntries = [];
-  renderLog();
+async function clearLog() {
+  try {
+    await fetch('/api/log', { method: 'DELETE' });
+  } catch(err) {
+    console.error('Failed to clear log:', err);
+  }
+  await loadLog();
 }
 
-function renderLog() {
+async function loadLog() {
+  try {
+    const res = await fetch('/api/log');
+    const entries = await res.json();
+    renderLog(entries);
+  } catch(err) {
+    console.error('Failed to load log:', err);
+  }
+}
+
+function renderLog(entries = []) {
   const container = document.getElementById('logEntries');
   const countEl = document.getElementById('logCount');
-  const emptyEl = document.getElementById('logEmpty');
-  countEl.textContent = `${logEntries.length} entr${logEntries.length === 1 ? 'y' : 'ies'}`;
+  countEl.textContent = `${entries.length} entr${entries.length === 1 ? 'y' : 'ies'}`;
 
-  if (logEntries.length === 0) {
-    container.innerHTML = '<div class="log-empty" id="logEmpty">No responses logged yet. Run a query to see results here.</div>';
+  if (entries.length === 0) {
+    container.innerHTML = '<div class="log-empty">No responses logged yet. Run a query to see results here.</div>';
     return;
   }
 
-  container.innerHTML = logEntries.map(e => {
-    const llm = LLMS[e.li];
-    const q = QUERIES[e.qi];
-    const timeStr = e.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    const scoreColors = ['score-0','score-1','score-2','score-3'];
+  const scoreColors = ['score-0','score-1','score-2','score-3'];
+  container.innerHTML = entries.map(e => {
+    const llmObj = LLMS.find(l => l.label === e.llm) || { cc: 'chatgpt', label: e.llm };
+    const timeStr = new Date(e.created_at).toLocaleString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
     return `
       <div class="log-entry">
         <div class="log-entry-header">
-          <span class="log-llm-badge log-llm-${llm.cc}">● ${llm.label}</span>
-          <span class="log-score-pill ${scoreColors[e.score]}">${e.score}</span>
-          <span class="log-query-text" title="${escHtml(q.text)}">Q${e.qi+1}: ${escHtml(q.text)}</span>
-          <span class="log-time">${timeStr}</span>
+          <span class="log-llm-badge log-llm-${llmObj.cc}">● ${escHtml(e.llm)}</span>
+          <span class="log-score-pill ${scoreColors[e.score] || 'score-0'}">${e.score}</span>
+          <span class="log-query-text" title="${escHtml(e.query_text)}">Q${e.query_index+1}: ${escHtml(e.query_text)}</span>
+          <span class="log-time" title="${escHtml(e.user_email)}">${timeStr} · ${escHtml(e.user_email.split('@')[0])}</span>
         </div>
-        <div class="log-response-text">${highlightTonic(escHtml(e.text))}</div>
+        <div class="log-response-text">${highlightTonic(escHtml(e.response))}</div>
       </div>`;
   }).join('');
 }
@@ -794,6 +817,7 @@ function highlightTonic(html) {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 render();
+loadLog();
 if (!LLMS.some(l => getKey(l.apiId))) {
   setTimeout(() => showToast('💡 Add API keys via ⚙️ Settings to enable live querying.', 'success'), 800);
 }
