@@ -3,16 +3,39 @@ const path = require('path');
 const session = require('express-session');
 const passport = require('passport');
 const { Strategy: GoogleStrategy } = require('passport-google-oauth20');
+const { Pool } = require('pg');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
+
+// ── Database ──────────────────────────────────────────────────────────────────
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
+
+async function initDb() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS response_log (
+      id          SERIAL PRIMARY KEY,
+      query_index INTEGER NOT NULL,
+      query_text  TEXT NOT NULL,
+      llm         TEXT NOT NULL,
+      response    TEXT NOT NULL,
+      score       INTEGER NOT NULL,
+      user_email  TEXT NOT NULL,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+  console.log('Database ready');
+}
 
 // ── Session ───────────────────────────────────────────────────────────────────
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 } // 24 hours
+  cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 }
 }));
 
 // ── Passport ──────────────────────────────────────────────────────────────────
@@ -33,6 +56,7 @@ passport.deserializeUser((user, done) => done(null, user));
 
 app.use(passport.initialize());
 app.use(passport.session());
+app.use(express.json());
 
 // ── Auth routes ───────────────────────────────────────────────────────────────
 app.get('/auth/google',
@@ -97,6 +121,47 @@ function requireAuth(req, res, next) {
   res.redirect('/login');
 }
 
+// ── API: Save a log entry ─────────────────────────────────────────────────────
+app.post('/api/log', requireAuth, async (req, res) => {
+  const { query_index, query_text, llm, response, score } = req.body;
+  try {
+    await pool.query(
+      `INSERT INTO response_log (query_index, query_text, llm, response, score, user_email)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [query_index, query_text, llm, response, score, req.user.email]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Log insert error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── API: Fetch log entries ────────────────────────────────────────────────────
+app.get('/api/log', requireAuth, async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 100, 500);
+    const result = await pool.query(
+      `SELECT * FROM response_log ORDER BY created_at DESC LIMIT $1`,
+      [limit]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Log fetch error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── API: Clear log ────────────────────────────────────────────────────────────
+app.delete('/api/log', requireAuth, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM response_log');
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Static files (protected) ──────────────────────────────────────────────────
 app.use(requireAuth, express.static(path.join(__dirname, 'public')));
 
@@ -105,6 +170,9 @@ app.get('*', requireAuth, (req, res) => {
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+initDb().then(() => {
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+}).catch(err => {
+  console.error('Failed to init DB:', err);
+  process.exit(1);
 });
