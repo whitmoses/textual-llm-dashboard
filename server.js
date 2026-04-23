@@ -19,7 +19,7 @@ app.use(session({
 passport.use(new GoogleStrategy({
   clientID:     process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL:  '/auth/google/callback'
+  callbackURL:  'https://textual-llm-dashboard-production.up.railway.app/auth/google/callback'
 }, (accessToken, refreshToken, profile, done) => {
   const email = profile.emails?.[0]?.value || '';
   if (!email.endsWith('@tonic.ai')) {
